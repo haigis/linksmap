@@ -923,58 +923,136 @@ javascript:void function () {
     // Export RTF
     // ─────────────────────────────────────
 
-function exportResultsAsCSV() {
-  const escapeCSV = (v) => {
-    if (v == null) return "";
-    v = String(v).replace(/"/g, '""');
-    return `"${v}"`;
-  };
 
-  let rows = [];
-  rows.push([
-    "Status",
-    "Reason",
-    "Label",
-    "ID",
-    "Href",
-    "AriaLabel",
-    "Title"
-  ]);
 
-  items.forEach((item) => {
+function exportResultsAsText() {
+  const lines = [];
+  const add = (t = "") => lines.push(t);
+
+  // Only include items visible in the sidebar for review
+  const reviewItems = getFilteredItemsForSidebar();
+
+  // Buckets
+  const failReviewer = [];
+  const failDuplicate = [];
+  const failMissing = [];
+  const pass = [];
+  const unset = [];
+
+  reviewItems.forEach(item => {
     const isPass = approvedSet.has(item.el);
     const isFail = rejectedSet.has(item.el);
 
-    // NEW: Export all items
-    const status = isPass ? "PASS" : isFail ? "FAIL" : "UNCHECKED";
+    const autoReason =
+      item.duplicate ? "duplicate-id" :
+      (item.missingId || item.meaningless) ? "missing-id" :
+      "";
 
-    // Determine reason (only meaningful for FAIL / UNCHECKED)
-    let reason = "";
-    if (item.duplicate) reason = "duplicate-id";
-    else if (item.missingId || item.meaningless) reason = "missing-id";
+    const e = {
+      label: item.label || "",
+      id: item.id || "",
+      href: item.href || ""
+    };
 
-    rows.push([
-      status,
-      reason,
-      item.label || "",
-      item.id || "",
-      item.href || "",
-      item.ariaLabel || "",
-      item.title || ""
-    ]);
+    if (isFail) {
+      if (autoReason === "duplicate-id") {
+        failDuplicate.push({ ...e, reason: autoReason });
+      } else if (autoReason === "missing-id") {
+        failMissing.push({ ...e, reason: autoReason });
+      } else {
+        failReviewer.push({ ...e, reason: "" }); // reviewer fail
+      }
+      return;
+    }
+
+    if (isPass) {
+      pass.push(e);
+      return;
+    }
+
+    unset.push(e);
   });
 
-  const csv = rows.map(r => r.join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
+  add("LinksMap Results");
+  add("------------------------------");
+  add("");
+
+  // FAIL — reviewer
+  if (failReviewer.length) {
+    add("FAIL — reviewer");
+    add("------------------------------");
+    failReviewer.forEach(e => {
+      add(`FAIL    ${e.label}`);
+      add(`id="${e.id}"`);
+      add(`href="${e.href}"`);
+      add("reason=");
+      add("");
+    });
+    add("");
+  }
+
+  // FAIL — duplicate-id
+  if (failDuplicate.length) {
+    add("FAIL — duplicate-id");
+    add("------------------------------");
+    failDuplicate.forEach(e => {
+      add(`FAIL    ${e.label}`);
+      add(`id="${e.id}"`);
+      add(`href="${e.href}"`);
+      add(`reason=${e.reason}`);
+      add("");
+    });
+    add("");
+  }
+
+  // FAIL — missing-id
+  if (failMissing.length) {
+    add("FAIL — missing-id");
+    add("------------------------------");
+    failMissing.forEach(e => {
+      add(`FAIL    ${e.label}`);
+      add(`id="${e.id}"`);
+      add(`href="${e.href}"`);
+      add(`reason=${e.reason}`);
+      add("");
+    });
+    add("");
+  }
+
+  // PASS
+  if (pass.length) {
+    add("PASS");
+    add("------------------------------");
+    pass.forEach(e => {
+      add(`PASS    ${e.label}`);
+      add(`id="${e.id}"`);
+      add(`href="${e.href}"`);
+      add("");
+    });
+    add("");
+  }
+
+  // UNSET
+  if (unset.length) {
+    add("UNSET");
+    add("------------------------------");
+    unset.forEach(e => {
+      add(`UNSET   ${e.label}`);
+      add(`id="${e.id}"`);
+      add(`href="${e.href}"`);
+      add("");
+    });
+  }
+
+  // Download file
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "idmap-results.csv";
+  a.download = "linksmap-results.txt";
   a.click();
   URL.revokeObjectURL(url);
 }
-
-
 
 
 
@@ -1078,7 +1156,7 @@ function exportResultsAsCSV() {
         } else if (action === "rescan") {
           rescanAllElements();
         } else if (action === "export") {
-  exportResultsAsCSV();
+  exportResultsAsText();
 } else if (action === "toggle-sidebar") {
           sidebar.style.display = sidebar.style.display === "none" ? "" : "none";
         } else if (action === "open-advanced") {
