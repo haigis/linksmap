@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="./linksmaplogo.jpg" alt="LinksMap Logo" width="220">
+</p>
+
+
 # LinksMap — Interactive Link & ID Auditor
 
 LinksMap is a lightweight, browser-injected auditing tool designed for UX testers, QA engineers, and accessibility reviewers who need to quickly inspect, validate, and mark links and interactive elements on any webpage.
