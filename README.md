@@ -1,5 +1,5 @@
-<p align="center">
-  <img src="./linksmaplogo.jpg" alt="LinksMap Logo" width="220">
+<p align="left">
+  <img src="./linksmaplogo.png" alt="LinksMap Logo" width="220">
 </p>
 
 
@@ -164,4 +164,5 @@ LinksMap is a single-file tool. Contributions may include:
 
 Free for personal, research, and internal QA use.  
 Commercial licensing available upon request.
+
 
